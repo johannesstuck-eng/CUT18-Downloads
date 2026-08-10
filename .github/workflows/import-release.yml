@@ -1,0 +1,37 @@
+name: Import CUT18 release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to mirror
+        required: true
+        default: v0.1.20
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download assets from the public source release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir assets
+          gh release download "$VERSION" \
+            --repo johannesstuck-eng/Golf-Studio \
+            --dir assets
+      - name: Verify published checksums
+        working-directory: assets
+        run: sha256sum -c SHA256SUMS.txt
+      - name: Upload assets to the public download release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release upload "$VERSION" assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
